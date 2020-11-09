@@ -1,0 +1,172 @@
+.container {
+    /* position: fixed; */
+    margin: 1%;
+    /* top: 0; right: 0; bottom: 0; left: 0; */
+    display: grid;
+    grid-template-areas:
+        "gameboard controls"
+        "infos infos";
+    font-family: "Lucida Console", Courier, sans-serif;
+}
+
+#gameboard {
+    grid-area: gameboard;
+    display: flex;
+    flex-direction: column;
+    height: 40%;
+}
+
+#gameboard>.line {
+    flex: 0 0 30px;
+    display: flex;
+    flex-direction: row;
+}
+
+#gameboard>.line>.cell {
+    flex: 0 0 30px;
+}
+
+#gameboard>.line>.cell>img {
+    height: 30px;
+    width: 30px;
+}
+
+img {
+    /* STOP SMOOTHING    */
+    image-rendering: optimizeSpeed;
+    /* Firefox           */
+    image-rendering: -moz-crisp-edges;
+    /* Opera             */
+    image-rendering: -o-crisp-edges;
+    /* Chrome and Safari */
+    image-rendering: -webkit-optimize-contrast;
+    /* Chrome            */
+    image-rendering: pixelated;
+    /* CSS3 Proposed     */
+    image-rendering: optimize-contrast;
+    /* IE8+              */
+    -ms-interpolation-mode: nearest-neighbor;
+}
+
+#infos {
+    grid-area: infos;
+    flex: 0 1 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+#gamestatus {
+    flex: 0 0 200px;
+}
+
+#logs {
+    display: flex;
+    flex-direction: column;
+    overflow-y: scroll;
+    max-height: 40%;
+}
+
+#logs>div {
+    flex: 0 0 10px
+}
+
+#controls {
+    grid-area: controls;
+    height: 40%;
+    display: grid;
+    grid-template-columns: 100px 100px 100px;
+    grid-template-rows: 100px 100px 100px;
+    grid-template-areas:
+        ". up ."
+        "left bomb right"
+        ". down .";
+    column-gap: 5px;
+    row-gap: 5px;
+}
+
+#controls>div {
+    flex: 0 0 50%;
+}
+
+#controls>div>img {
+    width: 100px;
+}
+
+#controls .up {
+    grid-area: up;
+    animation: upAnimation 0.5s linear;
+    position: relative;
+}
+
+@keyframes upAnimation {
+
+    0%,
+    100% {
+        bottom: 0px;
+    }
+
+    50% {
+        bottom: 10px;
+    }
+}
+
+#controls .down {
+    grid-area: down;
+    animation: downAnimation 0.5s linear;
+    position: relative;
+    transform: rotate(180deg);
+}
+
+@keyframes downAnimation {
+
+    0%,
+    100% {
+        top: 0px;
+    }
+
+    50% {
+        top: 10px;
+    }
+}
+
+#controls .bomb {
+    grid-area: bomb;
+}
+
+#controls .right {
+    grid-area: right;
+    animation: rightAnimation 0.5s linear;
+    position: relative;
+    transform: rotate(90deg);
+}
+
+@keyframes rightAnimation {
+
+    0%,
+    100% {
+        left: 0px;
+    }
+
+    50% {
+        left: 10px;
+    }
+}
+
+#controls .left {
+    grid-area: left;
+    animation: leftAnimation 0.5s linear;
+    position: relative;
+    transform: rotate(270deg);
+}
+
+@keyframes leftAnimation {
+
+    0%,
+    100% {
+        right: 0px;
+    }
+
+    50% {
+        right: 10px;
+    }
+}
