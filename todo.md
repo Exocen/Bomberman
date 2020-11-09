@@ -13,5 +13,6 @@
 * add good logger
 
 ## Various
+* add extern + debug address
 * Learn & use md
 * Tests :(
