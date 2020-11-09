@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Bomberman demo</title>
+    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="reset.css" />
+</head>
+
+<body>
+    <div class="container">
+        <div id="gameboard"></div>
+        <div id="controls">
+            <div id="left" class="left"><img src="imgs/up.png" alt="left" /></div>
+            <div id="up" class="up"><img src="imgs/up.png" alt="up" /></div>
+            <div id="right" class="right">
+                <img src="imgs/up.png" alt="right" />
+            </div>
+            <div id="down" class="down"><img src="imgs/up.png" alt="down" /></div>
+            <div id="bomb" class="bomb"><img id="bomb" src="imgs/bomb_nok.png" alt="bomb" /></div>
+        </div>
+        <div id="infos">
+            <ul>
+                <li>Move : Arrows keys</li>
+                <li>Bomb : Space</li>
+            </ul>
+            <div id="gamestatus"></div>
+            <div id="logs"></div>
+            <input type="text" id="console" name="chat" />
+        </div>
+    </div>
+    <script src="index.js"></script>
+</body>
+
+</html>
