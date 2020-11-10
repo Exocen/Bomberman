@@ -5,8 +5,8 @@ from entity import Entity
 
 
 class User(Entity):
-    BOMB_CD = int(1/InitValues.TICKS)
-    STATE_INTERVAL = int(0.50/InitValues.TICKS)
+    BOMB_CD = int(1 / InitValues.TICKS)
+    STATE_INTERVAL = int(0.50 / InitValues.TICKS)
     DESTRUCTABLE = True
     BLOCKABLE = True
 
@@ -23,7 +23,7 @@ class User(Entity):
         self.bomb_dropped = False
 
     def __str__(self):
-        return f'{self.get_name()} {self.mod} {self.ws.remote_address[0]}'
+        return f"{self.get_name()} {self.mod} {self.ws.remote_address[0]}"
 
     def get_name(self):
         return EntitiesNames.USER
@@ -56,31 +56,32 @@ class User(Entity):
 
         if self.message_queue:
             # Todo exceptions
-            logging.error(f'message_queue should be empty : {self.message_queue}')
+            logging.error(f"message_queue should be empty : {self.message_queue}")
 
     def killed_message_handle(self):
-            if Messages.KILLED in self.message_queue:
-                self.killed = self.message_queue.pop(Messages.KILLED)
-                self.mailbox.sendToList(EntitiesNames.LOG,
-                                        self.mod,
-                                        [f'killed by *{self.killed.mod}*'])
-                self.kill()
-                if self.killed is self:
-                    self.nb_suicide += 1
-                elif isinstance(self.killed, User):
-                    self.killed.nb_kill += 1
-                    self.nb_death += 1
-
+        if Messages.KILLED in self.message_queue:
+            self.killed = self.message_queue.pop(Messages.KILLED)
+            self.mailbox.sendToList(
+                EntitiesNames.LOG, self.mod, [f"killed by *{self.killed.mod}*"]
+            )
+            self.kill()
+            if self.killed is self:
+                self.nb_suicide += 1
+            elif isinstance(self.killed, User):
+                self.killed.nb_kill += 1
+                self.nb_death += 1
 
     def is_user_can_drop_bomb(self):
         return self.bomb_dropped is False and not self.killed and not self.blocked
 
     def get_state(self):
-        return {'mod': self.mod,
-                'id': self.id,
-                'can_drop': self.is_user_can_drop_bomb(),
-                'drop_delay': self.bomb_delay,
-                'deaths': self.nb_death,
-                'killed': self.nb_kill,
-                'suicides': self.nb_suicide,
-                **Entity.get_state(self)}
+        return {
+            "mod": self.mod,
+            "id": self.id,
+            "can_drop": self.is_user_can_drop_bomb(),
+            "drop_delay": self.bomb_delay,
+            "deaths": self.nb_death,
+            "killed": self.nb_kill,
+            "suicides": self.nb_suicide,
+            **Entity.get_state(self),
+        }

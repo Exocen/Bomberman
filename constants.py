@@ -1,10 +1,10 @@
-
 class Moves:
-    RIGHT = 'right'
-    LEFT = 'left'
-    DOWN = 'down'
-    UP = 'up'
+    RIGHT = "right"
+    LEFT = "left"
+    DOWN = "down"
+    UP = "up"
     ALL = {RIGHT, LEFT, DOWN, UP}
+
 
 class InitValues:
     LENGTH = 10
@@ -16,41 +16,42 @@ class InitValues:
 
 class Messages:
     # Position
-    POSITION = 'position'
+    POSITION = "position"
     # Boolean
-    BLOCKED = 'blocked'
+    BLOCKED = "blocked"
     # Position
-    BOMB_DROPPED = 'bomb_dropped'
+    BOMB_DROPPED = "bomb_dropped"
     # User
-    KILLED = 'killed'
+    KILLED = "killed"
     # Color
-    COLOR = 'color'
+    COLOR = "color"
     # Entity init args tuple
-    RESET = 'reset'
+    RESET = "reset"
     # int
-    ITER_STATE = 'iter_state'
+    ITER_STATE = "iter_state"
     # int
-    BOMB_CD = 'bomb_cd'
+    BOMB_CD = "bomb_cd"
     # Bomb
-    BOOM = 'boom'
+    BOOM = "boom"
     # Move
-    MOVE = 'move'
+    MOVE = "move"
     # Position
-    BOMB = 'bomb'
+    BOMB = "bomb"
     # Entity
-    TO_KILL = 'to_kill'
+    TO_KILL = "to_kill"
 
 
 class EntitiesNames:
-    ENTITY = 'entity'
-    USER = 'user'
-    EXPLOSION = 'explosion'
-    WALL = 'wall'
-    BOMB = 'bomb'
-    BOARD = 'board'
-    LOG = 'log'
+    ENTITY = "entity"
+    USER = "user"
+    EXPLOSION = "explosion"
+    WALL = "wall"
+    BOMB = "bomb"
+    BOARD = "board"
+    LOG = "log"
+
 
 class Directions:
-    VERTICAL = 'v'
-    HORIZONTAL = 'h'
-    ALL = 'f'
+    VERTICAL = "v"
+    HORIZONTAL = "h"
+    ALL = "f"

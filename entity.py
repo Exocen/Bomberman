@@ -18,7 +18,7 @@ class Entity:
         self.state = next(self.state_iterator)
 
     def __str__(self):
-        return f'{self.get_name()} {self.get_pos_tuple()}'
+        return f"{self.get_name()} {self.get_pos_tuple()}"
 
     async def update(self):
         self.message_queue = self.mailbox.get(self)
@@ -29,7 +29,6 @@ class Entity:
             self.set_position(self.message_queue.pop(Messages.POSITION))
         if Messages.BLOCKED in self.message_queue:
             self.blocked = self.message_queue.pop(Messages.BLOCKED)
-        
 
     def killed_message_handle(self):
         if Messages.KILLED in self.message_queue:
@@ -48,7 +47,7 @@ class Entity:
         self._dead = True
 
     def state_update(self):
-        """Update dying states"""        
+        """Update dying states"""
         message = {}
         if Messages.ITER_STATE in self.message_queue:
             state_interval = self.message_queue.pop(Messages.ITER_STATE)
@@ -67,11 +66,11 @@ class Entity:
         return (self._position.x, self._position.y)
 
     def get_state(self):
-        return {'x': self._position.x, 'y': self._position.y, 'dead': self.is_dead()}
+        return {"x": self._position.x, "y": self._position.y, "dead": self.is_dead()}
 
     def set_position(self, position):
         if not self.blocked:
             self._position = position
 
     def get_name(self):
-        return f'{EntitiesNames.ENTITY}'
+        return f"{EntitiesNames.ENTITY}"

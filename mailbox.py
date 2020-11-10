@@ -1,8 +1,7 @@
 import logging
 
 
-class MailBox():
-
+class MailBox:
     def __init__(self):
         # {entity: {message_key: value}}
         # {entity: {message_key: []}
@@ -11,7 +10,7 @@ class MailBox():
 
     def drop(self):
         if self.outbox:
-            logging.error(f'Outbox should be empty: {self.outbox}')
+            logging.error(f"Outbox should be empty: {self.outbox}")
         self.inbox, self.outbox = self.outbox, self.inbox
 
     def send(self, entity, message):
@@ -30,7 +29,7 @@ class MailBox():
         if not self.inbox or key not in self.inbox:
             return
         if self.outbox:
-            logging.error(f'Outbox should be empty: {self.outbox}')
+            logging.error(f"Outbox should be empty: {self.outbox}")
         self.outbox[key] = self.inbox.pop(key)
 
     def get(self, entity):

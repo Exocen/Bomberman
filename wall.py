@@ -16,10 +16,10 @@ class Wall(Entity):
         await Entity.update(self)
 
         if self.message_queue:
-            raise f'message_queue should be empty {self.message_queue}'
+            raise f"message_queue should be empty {self.message_queue}"
 
     def next_state(self):
         self.state = next(self.state_iterator, None)
 
     def get_state(self):
-        return {'wall_state': self.state, **Entity.get_state(self)}
+        return {"wall_state": self.state, **Entity.get_state(self)}
