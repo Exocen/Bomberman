@@ -18,12 +18,12 @@ class MailBox:
             self.inbox[entity] = {}
         self.inbox[entity].update(message)
 
-    def sendToList(self, entity, key, new_list):
+    def sendToList(self, entity, key, value):
         if entity not in self.inbox:
             self.inbox[entity] = {key: []}
         elif key not in self.inbox[entity]:
             self.inbox[entity][key] = []
-        self.inbox[entity][key] += new_list
+        self.inbox[entity][key] += [value]
 
     def drop_key(self, key):
         if not self.inbox or key not in self.inbox:

@@ -44,7 +44,7 @@ def main():
     start_server = game_board.create_server(IP, PORT)
     try:
         logging.info("Start")
-        loop.create_task(game_board.game_update())
+        loop.create_task(game_board.game_loop())
         loop.run_until_complete(start_server)
         loop.run_forever()
 

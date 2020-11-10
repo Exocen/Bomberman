@@ -4,7 +4,7 @@ from constants import EntitiesNames, InitValues, Messages
 
 class Explosion(Entity):
     STATE = [1, 2]
-    STATE_INTERVAL = int(0.5 / InitValues.TICKS)
+    STATE_INTERVAL = 0.5
 
     def __init__(self, position, mailbox, user, direction):
         self.user = user
@@ -17,15 +17,12 @@ class Explosion(Entity):
     def get_name(self):
         return f"{EntitiesNames.EXPLOSION}"
 
-    async def update(self):
-        await Entity.update(self)
+    def message_handle(self):
+        Entity.message_handle(self)
         self.state_update()
 
         if Messages.TO_KILL in self.message_queue:
             self.entities_to_kill.update(set(self.message_queue.pop(Messages.TO_KILL)))
-
-        if self.message_queue:
-            raise f"message_queue should be empty {self.message_queue}"
 
     def get_state(self):
         return {

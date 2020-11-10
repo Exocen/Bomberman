@@ -1,5 +1,6 @@
 class Position:
-    def __init__(self, x, y):
+    
+    def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
 
@@ -11,8 +12,8 @@ class Position:
         """
         return (self.x, self.y)
 
-    def __str__(self):
-        return "<" + str(self.x) + ", " + str(self.y) + ">"
+    def __str__(self) -> str:
+        return f"<{self.x}, {self.y}>"
 
     def __eq__(self, other):
         return self.y == other.y and self.x == other.x

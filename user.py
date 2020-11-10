@@ -28,8 +28,8 @@ class User(Entity):
     def get_name(self):
         return EntitiesNames.USER
 
-    async def update(self):
-        await Entity.update(self)
+    def message_handle(self):
+        Entity.message_handle(self)
         message = {}
 
         if Messages.BOMB_DROPPED in self.message_queue:
@@ -54,15 +54,11 @@ class User(Entity):
         if message:
             self.mailbox.send(self, message)
 
-        if self.message_queue:
-            # Todo exceptions
-            logging.error(f"message_queue should be empty : {self.message_queue}")
-
     def killed_message_handle(self):
         if Messages.KILLED in self.message_queue:
             self.killed = self.message_queue.pop(Messages.KILLED)
             self.mailbox.sendToList(
-                EntitiesNames.LOG, self.mod, [f"killed by *{self.killed.mod}*"]
+                EntitiesNames.LOG, self.mod, f"killed by *{self.killed.mod}*"
             )
             self.kill()
             if self.killed is self:

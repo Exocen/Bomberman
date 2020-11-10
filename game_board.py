@@ -53,7 +53,7 @@ class GameBoard:
         return game_map
 
     def create_server(self, ip, port):
-        return websockets.serve(self.game_loop, ip, port)
+        return websockets.serve(self.game, ip, port)
 
     def get_next_mod(self):
         mod = min(self.mods, key=self.mods.get)
@@ -125,7 +125,7 @@ class GameBoard:
         async with self.users_lock:
             self.users.add(user)
             logging.info(f"{user} user connected")
-        self.mailbox.sendToList(EntitiesNames.LOG, user.mod, ["connected"])
+        self.mailbox.sendToList(EntitiesNames.LOG, user.mod, "connected")
 
     async def unregister(self, user):
         async with self.users_lock:
@@ -134,7 +134,7 @@ class GameBoard:
             self.users.remove(user)
             if not self.users:
                 self.make_walls()
-        self.mailbox.sendToList(EntitiesNames.LOG, user.mod, ["disconnected"])
+        self.mailbox.sendToList(EntitiesNames.LOG, user.mod, "disconnected")
 
     async def put_bomb(self, user):
         if not user.is_user_can_drop_bomb():
@@ -155,7 +155,7 @@ class GameBoard:
             self.mailbox.sendToList(
                 explosion_list[-1],
                 Messages.TO_KILL,
-                [killable_entities[bomb.get_position()]],
+                killable_entities[bomb.get_position()],
             )
 
         def explosion_propagation(exp_range, direction):
@@ -172,7 +172,7 @@ class GameBoard:
                     self.mailbox.sendToList(
                         explosion_list[-1],
                         Messages.TO_KILL,
-                        [killable_entities[new_pos]],
+                        killable_entities[new_pos],
                     )
                     self.mailbox.send(
                         killable_entities[new_pos], {Messages.BLOCKED: True}
@@ -191,7 +191,7 @@ class GameBoard:
         for user in self.users:
             if user.get_position() in explosions_positions:
                 self.mailbox.sendToList(
-                    explosions_positions[user.get_position()], Messages.TO_KILL, [user]
+                    explosions_positions[user.get_position()], Messages.TO_KILL, user
                 )
                 self.mailbox.send(user, {Messages.BLOCKED: True})
 
@@ -238,11 +238,19 @@ class GameBoard:
         explosions_positions = {e.get_position(): e for e in self.explosions}
         if position in explosions_positions:
             self.mailbox.sendToList(
-                explosions_positions[position], Messages.TO_KILL, [user]
+                explosions_positions[position], Messages.TO_KILL, user
             )
             self.mailbox.send(user, {Messages.BLOCKED: True})
 
     def random_spawn(self, nb=1):
+        """ Return nb available positions
+
+        Args:
+            nb (int, optional): nb positions. Defaults to 1.
+
+        Returns:
+            [Position]: positions list
+        """
         # todo need better complexity (only if procedural maps)
         x_choices = range(InitValues.LENGTH)
         y_choices = range(InitValues.WIDTH)
@@ -262,7 +270,7 @@ class GameBoard:
 
         return random.choices(list(new_pos), k=nb)
 
-    async def game_update(self):
+    async def game_loop(self):
         while True:
             await asyncio.sleep(InitValues.TICKS)
             if self.users:
@@ -335,7 +343,7 @@ class GameBoard:
             self.clean_entity_list(self.explosions, self.explosions_lock),
         )
 
-    async def game_loop(self, websocket, path):
+    async def game(self, websocket, path):
         if len(self.users) >= InitValues.MAX_USERS:
             return
 
@@ -357,17 +365,17 @@ class GameBoard:
                 if "action" in data:
                     if data["action"] in Moves.ALL:
                         self.mailbox.sendToList(
-                            EntitiesNames.BOARD, Messages.MOVE, [[user, data["action"]]]
+                            EntitiesNames.BOARD, Messages.MOVE, [user, data["action"]]
                         )
                     elif data["action"] == "bomb":
                         # await self.put_bomb(user)
                         self.mailbox.sendToList(
-                            EntitiesNames.BOARD, Messages.BOMB, [user]
+                            EntitiesNames.BOARD, Messages.BOMB, user
                         )
                     else:
                         logging.error(f"Unsupported data {data}")
                 elif "chat" in data:
-                    self.mailbox.sendToList(EntitiesNames.LOG, user.mod, [data["chat"]])
+                    self.mailbox.sendToList(EntitiesNames.LOG, user.mod, data["chat"])
                 else:
                     logging.error(f"Unsupported event {message}")
         except websockets.exceptions.ConnectionClosedError:

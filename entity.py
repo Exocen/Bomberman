@@ -1,4 +1,5 @@
-from constants import Messages, EntitiesNames
+from constants import Messages, EntitiesNames, InitValues
+import logging
 
 
 class Entity:
@@ -22,6 +23,14 @@ class Entity:
 
     async def update(self):
         self.message_queue = self.mailbox.get(self)
+        self.message_handle()
+        if self.message_queue:
+            # Todo Exceptions
+            error_mess = f"message_queue should be empty {self.message_queue}"
+            logging.exception(error_mess)
+            raise Exception(error_mess)
+
+    def message_handle(self):
         if not self.message_queue:
             return
         self.killed_message_handle()
@@ -58,7 +67,7 @@ class Entity:
                     self.state = next(self.state_iterator)
                     message.update({Messages.ITER_STATE: self.STATE_INTERVAL})
             else:
-                message.update({Messages.ITER_STATE: state_interval - 1})
+                message.update({Messages.ITER_STATE: state_interval - InitValues.TICKS})
         if message:
             self.mailbox.send(self, message)
 

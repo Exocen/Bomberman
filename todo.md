@@ -14,5 +14,7 @@
 
 ## Various
 * add extern + debug address
+* DOC
+* more python constants
 * Learn & use md
 * Tests :(
