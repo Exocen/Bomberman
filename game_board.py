@@ -91,7 +91,7 @@ class GameBoard:
         for position in new_game_map:
             if self.game_map[position] != new_game_map[position]:
                 if new_game_map[position]:
-                    updated_entities.append([e for e in new_game_map[position])]
+                    updated_entities.extend([e for e in new_game_map[position]])
                 else:
                     updated_entities.append(Entity(position, self.mailbox))
 
