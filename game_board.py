@@ -34,11 +34,11 @@ class GameBoard:
         return [self.users, self.walls, self.bombs, self.explosions]
 
     def get_destructable_entities(self):
-        killable_entities = {}
+        killable_entities_by_pos = {}
         for entities in self.get_entities():
             if entities and next(iter(entities)).DESTRUCTABLE:
-                killable_entities.update({e.get_position(): e for e in entities})
-        return killable_entities
+                killable_entities_by_pos.update({e.get_position(): e for e in entities})
+        return killable_entities_by_pos
 
     def create_map(self):
         game_map = dict()
@@ -79,7 +79,7 @@ class GameBoard:
         return json.dumps({"type": "init", **state})
 
     def create_message(self):
-        """ Create message to notify users about map update
+        """Create message to notify users about map update
 
         Returns:
             dict : {{"type": "map"}{ updated : entities }} OR None
@@ -108,18 +108,23 @@ class GameBoard:
         return message
 
     async def notify(self):
+        """
+        Notify all users about game updates
+        """
         try:
             message = self.create_message()
             if message:
                 map_message = json.dumps(message)
                 # await user.ws.send(map_message)
                 # Todo player FOV
-                await asyncio.wait([user.ws.send(map_message) for user in self.users])
+                await asyncio.gather(
+                    *[user.ws.send(map_message) for user in self.users]
+                )
         except websockets.exceptions.ConnectionClosedError:
             logging.error("Connection lost")
-        except Exception as ex:
+        except Exception:
             logging.exception("Connection lost for unexpected reasons :")
-            raise ex
+            raise
 
     async def register(self, user):
         async with self.users_lock:
@@ -133,6 +138,7 @@ class GameBoard:
             logging.info(f"{user} user disconnected")
             self.users.remove(user)
             if not self.users:
+                logging.info("No more users, starting sleep mode")
                 self.make_walls()
         self.mailbox.sendToList(EntitiesNames.LOG, user.mod, "disconnected")
 
@@ -146,17 +152,10 @@ class GameBoard:
     async def boom(self, bomb):
         bomb.explosed = True
         x, y = bomb.get_pos_tuple()
-        killable_entities = self.get_destructable_entities()
+        killable_entities_by_pos = self.get_destructable_entities()
         explosion_list = [
             Explosion(bomb.get_position(), self.mailbox, bomb.user, Directions.ALL)
         ]
-
-        if bomb.get_position() in killable_entities:
-            self.mailbox.sendToList(
-                explosion_list[-1],
-                Messages.TO_KILL,
-                killable_entities[bomb.get_position()],
-            )
 
         def explosion_propagation(exp_range, direction):
             for new in exp_range:
@@ -164,7 +163,9 @@ class GameBoard:
                     new_pos = Position(new, y)
                 elif direction == Directions.HORIZONTAL:
                     new_pos = Position(x, new)
-                if new_pos not in killable_entities:
+                else:
+                    new_pos = Position(x, y)
+                if new_pos not in killable_entities_by_pos:
                     explosion_list.append(
                         Explosion(new_pos, self.mailbox, bomb.user, direction)
                     )
@@ -172,19 +173,21 @@ class GameBoard:
                     self.mailbox.sendToList(
                         explosion_list[-1],
                         Messages.TO_KILL,
-                        killable_entities[new_pos],
+                        killable_entities_by_pos[new_pos],
                     )
                     self.mailbox.send(
-                        killable_entities[new_pos], {Messages.BLOCKED: True}
+                        killable_entities_by_pos[new_pos], {Messages.BLOCKED: True}
                     )
                     break
 
+        explosion_propagation(range(1), Directions.ALL)
         explosion_propagation(range((x - 1), -1, -1), Directions.VERTICAL)
         explosion_propagation(range((x + 1), InitValues.LENGTH), Directions.VERTICAL)
         explosion_propagation(range((y - 1), -1, -1), Directions.HORIZONTAL)
         explosion_propagation(range((y + 1), InitValues.WIDTH), Directions.HORIZONTAL)
 
-        self.explosions.update(set(explosion_list))
+        async with self.explosions_lock:
+            self.explosions.update(set(explosion_list))
 
     def find_and_bomb_users(self):
         explosions_positions = {e.get_position(): e for e in self.explosions}
@@ -205,7 +208,7 @@ class GameBoard:
             self.walls.add(Wall(wall_position, self.mailbox))
 
     def is_position_free(self, position):
-        """Check if position doesn't contain an user or a wall"""
+        """Check if position doesn't contain a blockable entity"""
         for entities in self.get_entities():
             if entities and next(iter(entities)).BLOCKABLE:
                 for entity in entities:
@@ -229,7 +232,7 @@ class GameBoard:
 
         elif move == Moves.UP:
             y = y - 1 if y - 1 >= 0 else InitValues.WIDTH - 1
-        
+
         position = Position(x, y)
 
         if self.is_position_free(position):
@@ -243,7 +246,7 @@ class GameBoard:
             self.mailbox.send(user, {Messages.BLOCKED: True})
 
     def random_spawn(self, nb=1):
-        """ Return nb available positions
+        """Return nb available positions
 
         Args:
             nb (int, optional): nb positions. Defaults to 1.
@@ -271,6 +274,9 @@ class GameBoard:
         return random.choices(list(new_pos), k=nb)
 
     async def game_loop(self):
+        """
+        Update and clean all entities and notify users
+        """
         while True:
             await asyncio.sleep(InitValues.TICKS)
             if self.users:
@@ -290,7 +296,7 @@ class GameBoard:
                         bomb_mess = message_queue.pop(Messages.BOMB)
                         tasks += [self.put_bomb(u) for u in bomb_mess]
                     if tasks:
-                        await asyncio.wait(tasks)
+                        await asyncio.gather(*tasks)
 
                 self.mailbox.drop()
 
@@ -299,7 +305,7 @@ class GameBoard:
                 for entities in self.get_entities():
                     for entity in entities:
                         entities_task_update.append(entity.update())
-                await asyncio.wait(entities_task_update)
+                await asyncio.gather(*entities_task_update)
 
                 await self.notify()
                 await self.clean_entities()
@@ -324,9 +330,15 @@ class GameBoard:
         message.update({"logs": log_list})
         map_message = json.dumps(message)
         logging.debug(message)
-        await asyncio.wait([user.ws.send(map_message) for user in self.users])
+        await asyncio.gather(*[user.ws.send(map_message) for user in self.users])
 
     async def clean_entity_list(self, entity_list, lock):
+        """Remove dead entities
+
+        Args:
+            entity_list (list): entity list to clean
+            lock (async lock): entity lock
+        """
         async with lock:
             entity_list -= {e for e in entity_list if e.is_dead()}
 
