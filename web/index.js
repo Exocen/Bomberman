@@ -51,10 +51,7 @@ class WebSocketClient {
         this.ws.send(JSON.stringify(data));
     }
 
-    onClose() {
-        // todo might need it later
-        // reset
-    }
+    onClose() {}
 
     onMessage(e) {
         const data = JSON.parse(e.data);

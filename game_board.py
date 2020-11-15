@@ -22,10 +22,10 @@ class GameBoard:
         self.users_lock = asyncio.Lock()
         self.walls_lock = asyncio.Lock()
         self.bombs_lock = asyncio.Lock()
-        self.walls = set()
-        self.bombs = set()
         self.explosions = set()
         self.users = set()
+        self.walls = set()
+        self.bombs = set()
         self.mods = {mod: 0 for mod in range(1, 5)}
         self.game_map = self.create_map()
         self.make_walls()
@@ -244,6 +244,61 @@ class GameBoard:
                 explosions_positions[position], Messages.TO_KILL, user
             )
             self.mailbox.send(user, {Messages.BLOCKED: True})
+
+    @staticmethod
+    def is_position_valid(position):
+        if position.x < 0 or position.x >= InitValues.LENGTH:
+            return False
+        elif position.y < 0 or position.y >= InitValues.WIDTH:
+            return False
+        return True
+
+    def find_path(self, origin, destination):
+        class Node():
+            def __init__(self, parent=None, position=None):                
+                self.parent = parent
+                self.position = position
+
+                self.g = 0
+                self.h = 0
+
+            @property
+            def f(self):
+                return self.g + self.h
+
+            def __eq__(self, other):
+                return self.position == other.position
+
+        node_list = []
+        tmp_node_list = [Node(None, origin)]
+
+        while len(tmp_node_list) > 0:
+            node = min(tmp_node_list, key=(lambda k: k.f))
+            tmp_node_list.remove(node)
+            node_list.append(node)            
+            if node.position == destination:
+                path = []
+                while node is not None:
+                    path.append(node)
+                    node = node.parent
+                return path[::-1]
+
+            adjacents_nodes = []
+            n_pos = node.position
+            for new_p in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+                new_node_pos = Position(n_pos.x + new_p[0], n_pos.y + new_p[1])
+                new_node = Node(node, new_node_pos)
+                if new_node not in node_list and self.is_position_valid(new_node_pos) and self.is_position_free(new_node_pos):
+                    adjacents_nodes.append(new_node)
+                    
+            for n in adjacents_nodes:
+                n.g = node.g
+                n.h = pow(n.position.x - node.position.x, 2) + pow(n.position.y - node.position.y, 2)
+                if n not in tmp_node_list or node.g > n.g:
+                    tmp_node_list.append(n)               
+
+        return []
+                    
 
     def random_spawn(self, nb=1):
         """Return nb available positions
