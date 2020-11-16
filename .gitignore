@@ -34,3 +34,4 @@
 # Config folders
 __pycache__
 .vscode
+.idea
