@@ -10,7 +10,7 @@ class Position:
         Returns:
             tuple: (x, y)
         """
-        return (self.x, self.y)
+        return self.x, self.y
 
     def __str__(self) -> str:
         return f"<{self.x}, {self.y}>"

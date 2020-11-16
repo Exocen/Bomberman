@@ -12,6 +12,7 @@ class InitValues:
     WALLS = 20
     MAX_USERS = 4
     TICKS = 0.02
+    MAX_PATH_ITER = 10
 
 
 class Messages:

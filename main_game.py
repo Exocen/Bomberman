@@ -3,8 +3,9 @@
 import asyncio
 import logging
 import sys
-from game_board import GameBoard
 from logging.handlers import RotatingFileHandler
+
+from game_board import GameBoard
 
 
 def dev_logger():
@@ -33,7 +34,6 @@ PORT = 5678
 
 
 def main():
-
     if len(sys.argv) == 2 and sys.argv[1] == "-d":
         dev_logger()
     else:

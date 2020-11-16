@@ -51,7 +51,10 @@ class WebSocketClient {
         this.ws.send(JSON.stringify(data));
     }
 
-    onClose() {}
+    onClose() {
+        document.getElementById('gameboard').innerHTML = '';
+        new Game()
+    }
 
     onMessage(e) {
         const data = JSON.parse(e.data);

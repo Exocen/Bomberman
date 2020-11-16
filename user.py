@@ -8,11 +8,11 @@ class User(Entity):
     DESTRUCTIBLE = True
     BLOCKABLE = True
 
-    def __init__(self, ws, position, mailbox, mod, id):
+    def __init__(self, ws, position, mailbox, mod, user_id):
         super().__init__(position, mailbox)
         self.ws = ws
         self.mod = mod
-        self.id = id
+        self.id = user_id
         self.bomb_cd_state = False
         self.bomb_delay = None
         self.nb_kill = 0

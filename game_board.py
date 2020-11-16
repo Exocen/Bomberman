@@ -281,7 +281,7 @@ class GameBoard:
         node_list = []
         first_node = Node(destination, position=origin)
         tmp_node_list = [first_node]
-        max_iter = max_iter if max_iter else (InitValues.LENGTH * InitValues.WIDTH)
+        max_iter = max_iter if max_iter else InitValues.MAX_PATH_ITER
 
         while len(tmp_node_list) > 0 and max_iter > 0:
             max_iter -= 1
@@ -416,7 +416,7 @@ class GameBoard:
             self.clean_entity_list(self.explosions, self.explosions_lock),
         )
 
-    async def game(self, websocket, path):
+    async def game(self, websocket, _):
         if len(self.users) >= InitValues.MAX_USERS:
             return
 
