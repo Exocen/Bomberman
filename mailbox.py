@@ -11,6 +11,7 @@ class MailBox:
     def drop(self):
         if self.outbox:
             logging.error(f"Outbox should be empty: {self.outbox}")
+            self.outbox = {}
         self.inbox, self.outbox = self.outbox, self.inbox
 
     def send(self, entity, message):
@@ -18,7 +19,7 @@ class MailBox:
             self.inbox[entity] = {}
         self.inbox[entity].update(message)
 
-    def sendToList(self, entity, key, value):
+    def send_to_list(self, entity, key, value):
         if entity not in self.inbox:
             self.inbox[entity] = {key: []}
         elif key not in self.inbox[entity]:

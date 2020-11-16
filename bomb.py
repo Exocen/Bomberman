@@ -1,5 +1,5 @@
 from entity import Entity
-from constants import EntitiesNames, InitValues, Messages
+from constants import EntitiesNames, Messages
 
 
 class Bomb(Entity):
@@ -10,7 +10,7 @@ class Bomb(Entity):
     def __init__(self, position, mailbox, user):
         self.user = user
         Entity.__init__(self, position, mailbox)
-        self.explosed = False
+        self.exploded = False
         # Start detonation
         self.mailbox.send(self, {Messages.ITER_STATE: self.STATE_INTERVAL})
 
@@ -26,4 +26,4 @@ class Bomb(Entity):
 
     def kill(self):
         Entity.kill(self)
-        self.mailbox.sendToList(EntitiesNames.BOARD, Messages.BOOM, self)
+        self.mailbox.send_to_list(EntitiesNames.BOARD, Messages.BOOM, self)

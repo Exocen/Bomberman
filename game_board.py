@@ -1,18 +1,19 @@
 import asyncio
-import websockets
-import logging
 import json
+import logging
 import random
-
-from entity import Entity
-from wall import Wall
-from position import Position
 from uuid import uuid1
-from user import User
+
+import websockets
+
 from bomb import Bomb
-from explosion import Explosion
 from constants import Moves, InitValues, Messages, EntitiesNames, Directions
+from entity import Entity
+from explosion import Explosion
 from mailbox import MailBox
+from position import Position
+from user import User
+from wall import Wall
 
 
 class GameBoard:
@@ -33,10 +34,10 @@ class GameBoard:
     def get_entities(self):
         return [self.users, self.walls, self.bombs, self.explosions]
 
-    def get_destructable_entities(self):
+    def get_destructible_entities(self):
         killable_entities_by_pos = {}
         for entities in self.get_entities():
-            if entities and next(iter(entities)).DESTRUCTABLE:
+            if entities and next(iter(entities)).DESTRUCTIBLE:
                 killable_entities_by_pos.update({e.get_position(): e for e in entities})
         return killable_entities_by_pos
 
@@ -60,9 +61,9 @@ class GameBoard:
         self.mods[mod] += 1
         return mod
 
-    def get_init_state(self, id):
+    def get_init_state(self, user_id):
         """Get init state"""
-        state = {"length": InitValues.LENGTH, "width": InitValues.WIDTH, "id": id}
+        state = {"length": InitValues.LENGTH, "width": InitValues.WIDTH, "id": user_id}
 
         # Get all map for init
         message = dict()
@@ -130,7 +131,7 @@ class GameBoard:
         async with self.users_lock:
             self.users.add(user)
             logging.info(f"{user} user connected")
-        self.mailbox.sendToList(EntitiesNames.LOG, user.mod, "connected")
+        self.mailbox.send_to_list(EntitiesNames.LOG, user.mod, "connected")
 
     async def unregister(self, user):
         async with self.users_lock:
@@ -140,7 +141,7 @@ class GameBoard:
             if not self.users:
                 logging.info("No more users, starting sleep mode")
                 self.make_walls()
-        self.mailbox.sendToList(EntitiesNames.LOG, user.mod, "disconnected")
+        self.mailbox.send_to_list(EntitiesNames.LOG, user.mod, "disconnected")
 
     async def put_bomb(self, user):
         if not user.is_user_can_drop_bomb():
@@ -150,9 +151,9 @@ class GameBoard:
             self.bombs.add(Bomb(user.get_position(), self.mailbox, user))
 
     async def boom(self, bomb):
-        bomb.explosed = True
+        bomb.exploded = True
         x, y = bomb.get_pos_tuple()
-        killable_entities_by_pos = self.get_destructable_entities()
+        killable_entities_by_pos = self.get_destructible_entities()
         explosion_list = [
             Explosion(bomb.get_position(), self.mailbox, bomb.user, Directions.ALL)
         ]
@@ -170,7 +171,7 @@ class GameBoard:
                         Explosion(new_pos, self.mailbox, bomb.user, direction)
                     )
                 else:
-                    self.mailbox.sendToList(
+                    self.mailbox.send_to_list(
                         explosion_list[-1],
                         Messages.TO_KILL,
                         killable_entities_by_pos[new_pos],
@@ -193,7 +194,7 @@ class GameBoard:
         explosions_positions = {e.get_position(): e for e in self.explosions}
         for user in self.users:
             if user.get_position() in explosions_positions:
-                self.mailbox.sendToList(
+                self.mailbox.send_to_list(
                     explosions_positions[user.get_position()], Messages.TO_KILL, user
                 )
                 self.mailbox.send(user, {Messages.BLOCKED: True})
@@ -240,7 +241,7 @@ class GameBoard:
 
         explosions_positions = {e.get_position(): e for e in self.explosions}
         if position in explosions_positions:
-            self.mailbox.sendToList(
+            self.mailbox.send_to_list(
                 explosions_positions[position], Messages.TO_KILL, user
             )
             self.mailbox.send(user, {Messages.BLOCKED: True})
@@ -253,14 +254,13 @@ class GameBoard:
             return False
         return True
 
-    def find_path(self, origin, destination):
-        class Node():
-            def __init__(self, parent=None, position=None):                
+    def find_path(self, origin, destination, max_iter=None):
+        class Node:
+            def __init__(self, dest, parent=None, position=None):
                 self.parent = parent
                 self.position = position
-
-                self.g = 0
-                self.h = 0
+                self.g = parent.g + 1 if parent else 0
+                self.h = pow(self.position.x - dest.x, 2) + pow(self.position.y - dest.y, 2)
 
             @property
             def f(self):
@@ -269,36 +269,41 @@ class GameBoard:
             def __eq__(self, other):
                 return self.position == other.position
 
-        node_list = []
-        tmp_node_list = [Node(None, origin)]
+            def get_ancestors(self, ancestors=None):
+                if ancestors is None:
+                    ancestors = []
+                if self.parent is not None:
+                    ancestors.append(self)
+                    return self.parent.get_ancestors(ancestors)
+                ancestors = ancestors[::-1]
+                return [an.position for an in ancestors]
 
-        while len(tmp_node_list) > 0:
+        node_list = []
+        first_node = Node(destination, position=origin)
+        tmp_node_list = [first_node]
+        max_iter = max_iter if max_iter else (InitValues.LENGTH * InitValues.WIDTH)
+
+        while len(tmp_node_list) > 0 and max_iter > 0:
+            max_iter -= 1
             node = min(tmp_node_list, key=(lambda k: k.f))
             tmp_node_list.remove(node)
-            node_list.append(node)            
+            node_list.append(node)
             if node.position == destination:
-                path = []
-                while node is not None:
-                    path.append(node)
-                    node = node.parent
-                return path[::-1]
+                return node.get_ancestors()
 
-            adjacents_nodes = []
+            adjacent_nodes = []
             n_pos = node.position
+            # available movements
             for new_p in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
                 new_node_pos = Position(n_pos.x + new_p[0], n_pos.y + new_p[1])
-                new_node = Node(node, new_node_pos)
-                if new_node not in node_list and self.is_position_valid(new_node_pos) and self.is_position_free(new_node_pos):
-                    adjacents_nodes.append(new_node)
-                    
-            for n in adjacents_nodes:
-                n.g = node.g
-                n.h = pow(n.position.x - node.position.x, 2) + pow(n.position.y - node.position.y, 2)
-                if n not in tmp_node_list or node.g > n.g:
-                    tmp_node_list.append(n)               
+                if self.is_position_valid(new_node_pos) and self.is_position_free(new_node_pos):
+                    adjacent_nodes.append(Node(destination, node, new_node_pos))
 
-        return []
-                    
+            for n in adjacent_nodes:
+                if n not in node_list and (n not in tmp_node_list or node.g > n.g):
+                    tmp_node_list.append(n)
+
+        return (min(node_list, key=(lambda k: k.h))).get_ancestors()
 
     def random_spawn(self, nb=1):
         """Return nb available positions
@@ -387,15 +392,16 @@ class GameBoard:
         logging.debug(message)
         await asyncio.gather(*[user.ws.send(map_message) for user in self.users])
 
-    async def clean_entity_list(self, entity_list, lock):
+    @staticmethod
+    async def clean_entity_list(entity_set, lock):
         """Remove dead entities
 
         Args:
-            entity_list (list): entity list to clean
+            entity_set (set): entity list to clean
             lock (async lock): entity lock
         """
         async with lock:
-            entity_list -= {e for e in entity_list if e.is_dead()}
+            entity_set -= {e for e in entity_set if e.is_dead()}
 
     async def clean_entities(self):
         async with self.users_lock:
@@ -431,18 +437,18 @@ class GameBoard:
                 logging.debug(f"received: {data}")
                 if "action" in data:
                     if data["action"] in Moves.ALL:
-                        self.mailbox.sendToList(
+                        self.mailbox.send_to_list(
                             EntitiesNames.BOARD, Messages.MOVE, [user, data["action"]]
                         )
                     elif data["action"] == "bomb":
                         # await self.put_bomb(user)
-                        self.mailbox.sendToList(
+                        self.mailbox.send_to_list(
                             EntitiesNames.BOARD, Messages.BOMB, user
                         )
                     else:
                         logging.error(f"Unsupported data {data}")
                 elif "chat" in data:
-                    self.mailbox.sendToList(EntitiesNames.LOG, user.mod, data["chat"])
+                    self.mailbox.send_to_list(EntitiesNames.LOG, user.mod, data["chat"])
                 else:
                     logging.error(f"Unsupported event {message}")
         except websockets.exceptions.ConnectionClosedError:

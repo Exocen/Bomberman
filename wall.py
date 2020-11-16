@@ -1,9 +1,9 @@
 from entity import Entity
-from constants import EntitiesNames, InitValues, Messages
+from constants import EntitiesNames
 
 
 class Wall(Entity):
-    DESTRUCTABLE = True
+    DESTRUCTIBLE = True
     BLOCKABLE = True
 
     def __init__(self, position, mailbox):

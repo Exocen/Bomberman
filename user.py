@@ -1,5 +1,3 @@
-import logging
-
 from constants import EntitiesNames, InitValues, Messages
 from entity import Entity
 
@@ -7,7 +5,7 @@ from entity import Entity
 class User(Entity):
     BOMB_CD = int(1 / InitValues.TICKS)
     STATE_INTERVAL = int(0.50 / InitValues.TICKS)
-    DESTRUCTABLE = True
+    DESTRUCTIBLE = True
     BLOCKABLE = True
 
     def __init__(self, ws, position, mailbox, mod, id):
@@ -57,7 +55,7 @@ class User(Entity):
     def killed_message_handle(self):
         if Messages.KILLED in self.message_queue:
             self.killed = self.message_queue.pop(Messages.KILLED)
-            self.mailbox.sendToList(
+            self.mailbox.send_to_list(
                 EntitiesNames.LOG, self.mod, f"killed by *{self.killed.mod}*"
             )
             self.kill()

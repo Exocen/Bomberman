@@ -3,7 +3,7 @@ import logging
 
 
 class Entity:
-    DESTRUCTABLE = False
+    DESTRUCTIBLE = False
     BLOCKABLE = False
     STATE = [0]
     STATE_INTERVAL = 0
@@ -72,7 +72,7 @@ class Entity:
             self.mailbox.send(self, message)
 
     def get_pos_tuple(self):
-        return (self._position.x, self._position.y)
+        return self._position.x, self._position.y
 
     def get_state(self):
         return {"x": self._position.x, "y": self._position.y, "dead": self.is_dead()}
