@@ -106,22 +106,17 @@ class GameBoard:
             message.update({"type": "map"})
 
         self.game_map = new_game_map
-        return message
+        return json.dumps(message)
 
-    async def notify(self):
+    async def notify(self, message):
         """
         Notify all users about game updates
         """
         try:
-            message = self.create_message()
-            if message:
-                map_message = json.dumps(message)
-                # await user.ws.send(map_message)
-                # Todo player FOV
-                await asyncio.gather(
-                    *[user.ws.send(map_message) for user in self.users]
-                )
-        except websockets.exceptions.ConnectionClosedError:
+            # await user.ws.send(map_message)
+            # Todo player FOV
+            await asyncio.gather(*[user.ws.send(message) for user in self.users])
+        except (websockets.exceptions.ConnectionClosed):
             logging.error("Connection lost")
         except Exception:
             logging.exception("Connection lost for unexpected reasons :")
@@ -367,7 +362,9 @@ class GameBoard:
                         entities_task_update.append(entity.update())
                 await asyncio.gather(*entities_task_update)
 
-                await self.notify()
+                message = self.create_message()
+                if message:
+                    await self.notify(message)
                 await self.clean_entities()
                 await self.send_logs()
                 # Mailbox -> outbox should be empty
@@ -390,7 +387,7 @@ class GameBoard:
         message.update({"logs": log_list})
         map_message = json.dumps(message)
         logging.debug(message)
-        await asyncio.gather(*[user.ws.send(map_message) for user in self.users])
+        await self.notify(map_message)
 
     @staticmethod
     async def clean_entity_list(entity_set, lock):
@@ -452,8 +449,7 @@ class GameBoard:
                 else:
                     logging.error(f"Unsupported event {message}")
         except websockets.exceptions.ConnectionClosedError:
-            logging.exception("Connection lost")
-            raise
+            logging.error("Connection lost")
         except Exception:
             logging.exception("Unexpected error")
             raise
