@@ -17,6 +17,7 @@ class Entity:
         self.message_queue = {}
         self.state_iterator = iter(self.STATE)
         self.state = next(self.state_iterator)
+        self.state_interval = 0
 
     def __str__(self):
         return f"{self.get_name()} {self.get_pos_tuple()}"
@@ -58,16 +59,14 @@ class Entity:
     def state_update(self):
         """Update dying states"""
         message = {}
-        if Messages.ITER_STATE in self.message_queue:
-            state_interval = self.message_queue.pop(Messages.ITER_STATE)
-            if state_interval <= 0:
-                if self.state == self.STATE[-1]:
-                    self.kill()
-                else:
-                    self.state = next(self.state_iterator)
-                    message.update({Messages.ITER_STATE: self.STATE_INTERVAL})
+        if self.state_interval <= 0:
+            if self.state == self.STATE[-1]:
+                self.kill()
             else:
-                message.update({Messages.ITER_STATE: state_interval - InitValues.TICKS})
+                self.state = next(self.state_iterator)
+                self.state_interval = self.STATE_INTERVAL
+        else:
+            self.state_interval -= InitValues.TICKS
         if message:
             self.mailbox.send(self, message)
 

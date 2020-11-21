@@ -18,13 +18,8 @@ class Position:
     def __eq__(self, other):
         return self.y == other.y and self.x == other.x
 
-    def __lt__(self, other):
-        if other.x > self.x:
-            return True
-        elif self.x == other.x and self.y > other.y:
-            return True
-        else:
-            return False
+    def __gt__(self, other):
+        return self.x > other.x or (self.x == other.x and self.y > other.y)
 
     def __hash__(self):
         return hash((self.x, self.y))

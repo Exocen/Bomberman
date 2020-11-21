@@ -29,8 +29,6 @@ class Messages:
     # Entity init args tuple
     RESET = "reset"
     # int
-    ITER_STATE = "iter_state"
-    # int
     BOMB_CD = "bomb_cd"
     # Bomb
     BOOM = "boom"

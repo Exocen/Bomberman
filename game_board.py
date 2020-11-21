@@ -16,6 +16,15 @@ from user import User
 from wall import Wall
 
 
+def _make_moves():
+    return {
+        Moves.RIGHT: lambda pos: (Position(pos.x + 1, pos.y) if pos.x + 1 < InitValues.LENGTH else Position(0, pos.y)),
+        Moves.LEFT: lambda pos: (
+            Position(pos.x - 1, pos.y) if pos.x - 1 >= 0 else Position(InitValues.LENGTH - 1, pos.y)),
+        Moves.DOWN: lambda pos: (Position(pos.x, pos.y + 1) if pos.y + 1 < InitValues.WIDTH else Position(pos.x, 0)),
+        Moves.UP: lambda pos: (Position(pos.x, pos.y - 1) if pos.y - 1 >= 0 else Position(pos.x, InitValues.WIDTH - 1))}
+
+
 class GameBoard:
     def __init__(self):
         self.mailbox = MailBox()
@@ -30,6 +39,7 @@ class GameBoard:
         self.mods = {mod: 0 for mod in range(1, 5)}
         self.game_map = self.create_map()
         self.make_walls()
+        self.dict_moves = _make_moves()
 
     def get_entities(self):
         return [self.users, self.walls, self.bombs, self.explosions]
@@ -116,8 +126,8 @@ class GameBoard:
             # await user.ws.send(map_message)
             # Todo player FOV
             await asyncio.gather(*[user.ws.send(message) for user in self.users])
-        except (websockets.exceptions.ConnectionClosed):
-            logging.error("Connection lost")
+        except websockets.exceptions.ConnectionClosed:
+            logging.debug("Connection lost")
         except Exception:
             logging.exception("Connection lost for unexpected reasons :")
             raise
@@ -149,9 +159,7 @@ class GameBoard:
         bomb.exploded = True
         x, y = bomb.get_pos_tuple()
         killable_entities_by_pos = self.get_destructible_entities()
-        explosion_list = [
-            Explosion(bomb.get_position(), self.mailbox, bomb.user, Directions.ALL)
-        ]
+        explosion_list = [Explosion(bomb.get_position(), self.mailbox, bomb.user, Directions.ALL)]
 
         def explosion_propagation(exp_range, direction):
             for new in exp_range:
@@ -162,18 +170,10 @@ class GameBoard:
                 else:
                     new_pos = Position(x, y)
                 if new_pos not in killable_entities_by_pos:
-                    explosion_list.append(
-                        Explosion(new_pos, self.mailbox, bomb.user, direction)
-                    )
+                    explosion_list.append(Explosion(new_pos, self.mailbox, bomb.user, direction))
                 else:
-                    self.mailbox.send_to_list(
-                        explosion_list[-1],
-                        Messages.TO_KILL,
-                        killable_entities_by_pos[new_pos],
-                    )
-                    self.mailbox.send(
-                        killable_entities_by_pos[new_pos], {Messages.BLOCKED: True}
-                    )
+                    self.mailbox.send_to_list(explosion_list[-1], Messages.TO_KILL, killable_entities_by_pos[new_pos])
+                    self.mailbox.send(killable_entities_by_pos[new_pos], {Messages.BLOCKED: True})
                     break
 
         explosion_propagation(range(1), Directions.ALL)
@@ -189,9 +189,7 @@ class GameBoard:
         explosions_positions = {e.get_position(): e for e in self.explosions}
         for user in self.users:
             if user.get_position() in explosions_positions:
-                self.mailbox.send_to_list(
-                    explosions_positions[user.get_position()], Messages.TO_KILL, user
-                )
+                self.mailbox.send_to_list(explosions_positions[user.get_position()], Messages.TO_KILL, user)
                 self.mailbox.send(user, {Messages.BLOCKED: True})
 
     def kill_and_respawn(self, user):
@@ -215,30 +213,15 @@ class GameBoard:
     async def move_user(self, user, move):
         if user.blocked:
             return
-        x, y = user.get_pos_tuple()
 
-        if move == Moves.RIGHT:
-            x = x + 1 if x + 1 < InitValues.LENGTH else 0
+        new_position = self.dict_moves[move](user.get_position())
 
-        elif move == Moves.LEFT:
-            x = x - 1 if x - 1 >= 0 else InitValues.LENGTH - 1
-
-        elif move == Moves.DOWN:
-            y = y + 1 if y + 1 < InitValues.WIDTH else 0
-
-        elif move == Moves.UP:
-            y = y - 1 if y - 1 >= 0 else InitValues.WIDTH - 1
-
-        position = Position(x, y)
-
-        if self.is_position_free(position):
-            self.mailbox.send(user, {Messages.POSITION: position})
+        if self.is_position_free(new_position):
+            self.mailbox.send(user, {Messages.POSITION: new_position})
 
         explosions_positions = {e.get_position(): e for e in self.explosions}
-        if position in explosions_positions:
-            self.mailbox.send_to_list(
-                explosions_positions[position], Messages.TO_KILL, user
-            )
+        if new_position in explosions_positions:
+            self.mailbox.send_to_list(explosions_positions[new_position], Messages.TO_KILL, user)
             self.mailbox.send(user, {Messages.BLOCKED: True})
 
     @staticmethod
@@ -288,7 +271,7 @@ class GameBoard:
 
             adjacent_nodes = []
             n_pos = node.position
-            # available movements
+            # available movements:
             for new_p in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
                 new_node_pos = Position(n_pos.x + new_p[0], n_pos.y + new_p[1])
                 if self.is_position_valid(new_node_pos) and self.is_position_free(new_node_pos):
@@ -448,8 +431,8 @@ class GameBoard:
                     self.mailbox.send_to_list(EntitiesNames.LOG, user.mod, data["chat"])
                 else:
                     logging.error(f"Unsupported event {message}")
-        except websockets.exceptions.ConnectionClosedError:
-            logging.error("Connection lost")
+        except websockets.exceptions.ConnectionClosed:
+            logging.debug("Connection lost")
         except Exception:
             logging.exception("Unexpected error")
             raise

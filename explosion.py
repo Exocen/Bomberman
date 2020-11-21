@@ -12,7 +12,7 @@ class Explosion(Entity):
         self.direction = direction
         self.entities_to_kill = set()
         # Start detonation
-        self.mailbox.send(self, {Messages.ITER_STATE: self.STATE_INTERVAL})
+        self.state_interval = self.STATE_INTERVAL
 
     def get_name(self):
         return f"{EntitiesNames.EXPLOSION}"

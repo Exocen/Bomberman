@@ -3,8 +3,8 @@ from entity import Entity
 
 
 class User(Entity):
-    BOMB_CD = int(1 / InitValues.TICKS)
-    STATE_INTERVAL = int(0.50 / InitValues.TICKS)
+    BOMB_CD = 1
+    STATE_INTERVAL = 0.5
     DESTRUCTIBLE = True
     BLOCKABLE = True
 
@@ -13,8 +13,7 @@ class User(Entity):
         self.ws = ws
         self.mod = mod
         self.id = user_id
-        self.bomb_cd_state = False
-        self.bomb_delay = None
+        self.bomb_cd = 0
         self.nb_kill = 0
         self.nb_suicide = 0
         self.nb_death = 0
@@ -33,14 +32,13 @@ class User(Entity):
         if Messages.BOMB_DROPPED in self.message_queue:
             self.bomb_dropped = self.message_queue.pop(Messages.BOMB_DROPPED)
             if self.bomb_dropped:
-                message.update({Messages.BOMB_CD: self.BOMB_CD})
+                self.bomb_cd = self.BOMB_CD
 
-        if Messages.BOMB_CD in self.message_queue:
-            bomb_cd = self.message_queue.pop(Messages.BOMB_CD)
-            if bomb_cd <= 0:
-                self.bomb_dropped = False
-            else:
-                message.update({Messages.BOMB_CD: bomb_cd - 1})
+        # TODO cd handle -> entity
+        if self.bomb_cd < 0:
+            self.bomb_dropped = False
+        else:
+            self.bomb_cd -= InitValues.TICKS
 
         if Messages.RESET in self.message_queue:
             self._position = self.message_queue.pop(Messages.RESET)
@@ -55,9 +53,7 @@ class User(Entity):
     def killed_message_handle(self):
         if Messages.KILLED in self.message_queue:
             self.killed = self.message_queue.pop(Messages.KILLED)
-            self.mailbox.send_to_list(
-                EntitiesNames.LOG, self.mod, f"killed by *{self.killed.mod}*"
-            )
+            self.mailbox.send_to_list(EntitiesNames.LOG, self.mod, f"killed by *{self.killed.mod}*")
             self.kill()
             if self.killed is self:
                 self.nb_suicide += 1
@@ -73,7 +69,6 @@ class User(Entity):
             "mod": self.mod,
             "id": self.id,
             "can_drop": self.is_user_can_drop_bomb(),
-            "drop_delay": self.bomb_delay,
             "deaths": self.nb_death,
             "killed": self.nb_kill,
             "suicides": self.nb_suicide,

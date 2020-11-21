@@ -12,7 +12,7 @@ class Bomb(Entity):
         Entity.__init__(self, position, mailbox)
         self.exploded = False
         # Start detonation
-        self.mailbox.send(self, {Messages.ITER_STATE: self.STATE_INTERVAL})
+        self.state_interval = self.STATE_INTERVAL
 
     def get_name(self):
         return f"{EntitiesNames.BOMB}"
