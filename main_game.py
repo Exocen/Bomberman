@@ -21,12 +21,10 @@ def dev_logger():
 def logger():
     log_name = "/tmp/bomberman.log"
     handler = RotatingFileHandler(log_name, maxBytes=5 * 1024 * 1024, backupCount=1)
-    logging.basicConfig(
-        level=logging.INFO,
-        handlers=[handler],
-        format="%(asctime)s|%(levelname)s : %(message)s",
-        datefmt="%Y-%m-%d|%H:%M:%S",
-    )
+    logging.basicConfig(level=logging.INFO,
+                        handlers=[handler],
+                        format="%(asctime)s|%(levelname)s : %(message)s",
+                        datefmt="%Y-%m-%d|%H:%M:%S")
 
 
 IP = "localhost"

@@ -1,5 +1,5 @@
-from entity import Entity
 from constants import EntitiesNames
+from entity import Entity
 
 
 class Wall(Entity):

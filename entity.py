@@ -59,7 +59,7 @@ class Entity:
     def state_update(self):
         """Update dying states"""
         message = {}
-        if self.state_interval <= 0:
+        if self.state_interval < 0:
             if self.state == self.STATE[-1]:
                 self.kill()
             else:

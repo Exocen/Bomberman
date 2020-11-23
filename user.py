@@ -20,7 +20,8 @@ class User(Entity):
         self.bomb_dropped = False
 
     def __str__(self):
-        return f"{self.get_name()} {self.mod} {self.ws.remote_address[0]}"
+        ws = self.ws.remote_address[0] if self.ws is not None else 'bot'
+        return f"{self.get_name()} {self.mod} {ws}"
 
     def get_name(self):
         return EntitiesNames.USER

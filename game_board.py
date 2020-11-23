@@ -7,6 +7,7 @@ from uuid import uuid1
 import websockets
 
 from bomb import Bomb
+from bot import Bot
 from constants import Moves, InitValues, Messages, EntitiesNames, Directions
 from entity import Entity
 from explosion import Explosion
@@ -32,17 +33,19 @@ class GameBoard:
         self.users_lock = asyncio.Lock()
         self.walls_lock = asyncio.Lock()
         self.bombs_lock = asyncio.Lock()
+        self.bots_lock = asyncio.Lock()
         self.explosions = set()
         self.users = set()
         self.walls = set()
         self.bombs = set()
+        self.bots = set()
         self.mods = {mod: 0 for mod in range(1, 5)}
         self.game_map = self.create_map()
         self.make_walls()
         self.dict_moves = _make_moves()
 
     def get_entities(self):
-        return [self.users, self.walls, self.bombs, self.explosions]
+        return [self.users, self.walls, self.bombs, self.explosions, self.bots]
 
     def get_destructible_entities(self):
         killable_entities_by_pos = {}
@@ -97,26 +100,27 @@ class GameBoard:
         """
         message = dict()
         new_game_map = self.create_map()
-        updated_entities = []
 
-        for position in new_game_map:
-            if self.game_map[position] != new_game_map[position]:
-                if new_game_map[position]:
-                    updated_entities.extend([e for e in new_game_map[position]])
-                else:
-                    updated_entities.append(Entity(position, self.mailbox))
-
-        for entity in updated_entities:
+        def _update_message(entity):
             if entity.get_name() in message:
                 message[entity.get_name()].append(entity.get_state())
             else:
                 message[entity.get_name()] = [entity.get_state()]
 
-        if message:
-            message.update({"type": "map"})
+        for position in new_game_map:
+            if self.game_map[position] != new_game_map[position]:
+                if new_game_map[position]:
+                    for e in new_game_map[position]:
+                        _update_message(e)
+                else:
+                    _update_message(Entity(position, self.mailbox))
 
         self.game_map = new_game_map
-        return json.dumps(message)
+
+        if message:
+            message.update({"type": "map"})
+            return json.dumps(message)
+        return None
 
     async def notify(self, message):
         """
@@ -136,6 +140,11 @@ class GameBoard:
         async with self.users_lock:
             self.users.add(user)
             logging.info(f"{user} user connected")
+        if len(self.bots) <= 0:
+            async with self.bots_lock:
+                bot = Bot(self, self.random_spawn()[0], self.mailbox, self.get_next_mod(), str(uuid1()))
+                self.bots.add(bot)
+
         self.mailbox.send_to_list(EntitiesNames.LOG, user.mod, "connected")
 
     async def unregister(self, user):
@@ -145,6 +154,7 @@ class GameBoard:
             self.users.remove(user)
             if not self.users:
                 logging.info("No more users, starting sleep mode")
+                self.bots = set()
                 self.make_walls()
         self.mailbox.send_to_list(EntitiesNames.LOG, user.mod, "disconnected")
 
@@ -219,6 +229,9 @@ class GameBoard:
         if self.is_position_free(new_position):
             self.mailbox.send(user, {Messages.POSITION: new_position})
 
+        self.check_explosions(user, new_position)
+
+    def check_explosions(self, user, new_position):
         explosions_positions = {e.get_position(): e for e in self.explosions}
         if new_position in explosions_positions:
             self.mailbox.send_to_list(explosions_positions[new_position], Messages.TO_KILL, user)
@@ -384,8 +397,15 @@ class GameBoard:
             entity_set -= {e for e in entity_set if e.is_dead()}
 
     async def clean_entities(self):
+        # todo put that in entity update
         async with self.users_lock:
             users_to_kill = {u for u in self.users if u.is_dead()}
+            if users_to_kill:
+                for user in users_to_kill:
+                    self.kill_and_respawn(user)
+
+        async with self.bots_lock:
+            users_to_kill = {u for u in self.bots if u.is_dead()}
             if users_to_kill:
                 for user in users_to_kill:
                     self.kill_and_respawn(user)
@@ -400,14 +420,7 @@ class GameBoard:
         if len(self.users) >= InitValues.MAX_USERS:
             return
 
-        user = User(
-            websocket,
-            self.random_spawn()[0],
-            self.mailbox,
-            self.get_next_mod(),
-            str(uuid1()),
-        )
-
+        user = User(websocket, self.random_spawn()[0], self.mailbox, self.get_next_mod(), str(uuid1()))
         await self.register(user)
 
         try:
@@ -417,14 +430,9 @@ class GameBoard:
                 logging.debug(f"received: {data}")
                 if "action" in data:
                     if data["action"] in Moves.ALL:
-                        self.mailbox.send_to_list(
-                            EntitiesNames.BOARD, Messages.MOVE, [user, data["action"]]
-                        )
+                        self.mailbox.send_to_list(EntitiesNames.BOARD, Messages.MOVE, [user, data["action"]])
                     elif data["action"] == "bomb":
-                        # await self.put_bomb(user)
-                        self.mailbox.send_to_list(
-                            EntitiesNames.BOARD, Messages.BOMB, user
-                        )
+                        self.mailbox.send_to_list(EntitiesNames.BOARD, Messages.BOMB, user)
                     else:
                         logging.error(f"Unsupported data {data}")
                 elif "chat" in data:

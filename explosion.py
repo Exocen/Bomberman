@@ -1,5 +1,5 @@
+from constants import EntitiesNames, Messages
 from entity import Entity
-from constants import EntitiesNames, InitValues, Messages
 
 
 class Explosion(Entity):
@@ -28,7 +28,7 @@ class Explosion(Entity):
         return {
             "explosion_state": self.state,
             "direction": self.direction,
-            **Entity.get_state(self),
+            **Entity.get_state(self)
         }
 
     def kill(self):

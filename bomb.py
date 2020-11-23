@@ -1,5 +1,5 @@
-from entity import Entity
 from constants import EntitiesNames, Messages
+from entity import Entity
 
 
 class Bomb(Entity):

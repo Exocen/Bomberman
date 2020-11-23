@@ -28,8 +28,6 @@ class Messages:
     COLOR = "color"
     # Entity init args tuple
     RESET = "reset"
-    # int
-    BOMB_CD = "bomb_cd"
     # Bomb
     BOOM = "boom"
     # Move
