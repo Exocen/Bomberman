@@ -116,7 +116,7 @@ class Controls {
         document.body.addEventListener('keyup', (e) => {
             this.onKeyUp(e);
         });
-        document.getElementById('console').addEventListener('keyup', (e) => {
+        document.getElementById('user_console').addEventListener('keyup', (e) => {
             this.chat(e);
         });
 
@@ -195,12 +195,12 @@ class Controls {
 
     chat(e) {
         if (e.keyCode == 13) {
-            let console = document.getElementById('console');
-            let chat = console.value;
+            let u_console = document.getElementById('user_console');
+            let chat = u_console.value;
             this.wsClient.send({
                 chat
             });
-            console.value = '';
+            u_console.value = '';
         }
     }
 }

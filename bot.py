@@ -29,11 +29,11 @@ class Bot(User):
         if self.target is None or self.blocked:
             return
 
-        path = self.game_board.find_path(self.target.get_position(), self.get_position())
+        path = self.game_board.find_path(self.get_position(), self.target.get_position())
 
         if not path:
             return
-        new_position = path[-1]
+        new_position = path[0]
 
         self.game_board.check_explosions(self, new_position)
 
