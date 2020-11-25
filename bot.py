@@ -26,6 +26,11 @@ class Bot(User):
         else:
             self._bot_delay = self.BOT_DELAY
 
+        # target update
+        if self.target is None or self.target not in self.game_board.users:
+            self.target = next(iter(self.game_board.users)) if self.game_board.users else None
+
+        # target pursuit
         if self.target is None or self.blocked:
             return
 

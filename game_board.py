@@ -43,6 +43,7 @@ class GameBoard:
         self.game_map = self.create_map()
         self.make_walls()
         self.dict_moves = _make_moves()
+        # self.tmp = 0
 
     def get_entities(self):
         return [self.users, self.walls, self.bombs, self.explosions, self.bots]
@@ -330,6 +331,17 @@ class GameBoard:
         """
         while True:
             await asyncio.sleep(InitValues.TICKS)
+            # if self.tmp <= 0:
+            #     self.tmp = 1
+            #     all_objects = muppy.get_objects()
+            #     d = [ao for ao in all_objects if isinstance(ao, (User, Entity, Bot, Bomb, Wall, Explosion))]
+            #     sum1 = summary.summarize(d)
+            #     summary.print_(sum1)
+            # else:
+            #     if not self.users:
+            #         self.tmp -= 1
+            #     else:
+            #         self.tmp -= InitValues.TICKS
             if self.users:
 
                 # Board update DO NOT send messages to board before mailbox.drop()

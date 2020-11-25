@@ -105,6 +105,9 @@ class Controls {
         window.addEventListener(
             'keydown',
             function(e) {
+                if (document.getElementById('user_console') === document.activeElement) {
+                    return;
+                }
                 // space and arrow keys
                 if ([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
                     e.preventDefault();
@@ -149,8 +152,7 @@ class Controls {
         if (this.wsClient.getState() !== WebSocket.OPEN) return;
 
         let action = '';
-        let console = document.getElementById('console');
-        if (console === document.activeElement) {
+        if (document.getElementById('user_console') === document.activeElement) {
             return;
         }
 
@@ -196,11 +198,13 @@ class Controls {
     chat(e) {
         if (e.keyCode == 13) {
             let u_console = document.getElementById('user_console');
-            let chat = u_console.value;
-            this.wsClient.send({
-                chat
-            });
-            u_console.value = '';
+            let chat = u_console.value.trim().replace(/(\r\n|\n|\r)/gm, "");
+            if (chat) {
+                this.wsClient.send({
+                    chat
+                });
+                u_console.value = '';
+            }
         }
     }
 }
